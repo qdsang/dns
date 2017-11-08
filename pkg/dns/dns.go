@@ -576,6 +576,25 @@ func (kd *KubeDNS) newExternalNameService(service *v1.Service) {
 	kd.cache.SetEntry(service.Name, recordValue, fqdn, cachePath...)
 }
 
+// Generates skydns records for an cname service.
+func (kd *KubeDNS) cNameService(name string, cname string) {
+
+	recordValue, _ := util.GetSkyMsg(cname, 0)
+	cachePath := util.ReverseArray(strings.Split(strings.TrimRight(name, "."), "."))
+	fqdn := dns.Fqdn(name)
+	entryName := cachePath[len(cachePath) - 1]
+	cachePath = cachePath[0:len(cachePath) - 1]
+
+	glog.V(0).Infof("cNameService: storing key %s with value %v as %s under %v",
+		entryName, recordValue, fqdn, cachePath)
+
+	kd.cacheLock.Lock()
+	defer kd.cacheLock.Unlock()
+
+	// Store the service name directly as the leaf key
+	kd.cache.SetEntry(entryName, recordValue, fqdn, cachePath...)
+}
+
 // Records responds with DNS records that match the given name, in a format
 // understood by the skydns server. If "exact" is true, a single record
 // matching the given name is returned, otherwise all records stored under
