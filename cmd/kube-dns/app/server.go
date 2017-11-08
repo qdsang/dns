@@ -140,6 +140,22 @@ func (server *KubeDNSServer) setupHandlers() {
 			fmt.Fprint(w, err)
 		}
 	})
+	
+	glog.V(0).Infof("Setting up add handler (/add)")
+	http.HandleFunc("/add", func(w http.ResponseWriter, req *http.Request) {
+		host := req.URL.Query().Get("host")
+		cname := req.URL.Query().Get("cname")
+
+		server.kd.cNameService(host, cname)
+
+		serializedJSON, err := server.kd.GetCacheAsJSON()
+		if err == nil {
+			fmt.Fprint(w, serializedJSON)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, err)
+		}
+	})
 }
 
 // setupSignalHandlers installs signal handler to ignore SIGINT and
